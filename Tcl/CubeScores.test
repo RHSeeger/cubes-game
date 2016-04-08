@@ -1,0 +1,121 @@
+#
+# $Header: /opt/cvs-repository/cubes/CubeScores.test,v 1.1 2004/04/10 22:15:11 Robert Exp $
+#
+
+package require tcltest
+namespace import tcltest::*
+
+source CubeScores.tcl
+
+# ========================================
+test constructor-1.1 {
+    Make sure the object starts with 10 high scores
+} {
+    [CubeScores \#auto] getScores
+} {{0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0}}
+
+# ========================================
+test addScore-1.1 {
+    Make sure only the 10 highest are kept
+} {
+    set obj [CubeScores \#auto]
+    for {set i 0} {$i < 12} {incr i} {
+        $obj addScore [expr {$i * 100}] $i 0
+    }
+    $obj getScores
+} {{1100 11 0} {1000 10 0} {900 9 0} {800 8 0} {700 7 0} {600 6 0} {500 5 0} {400 4 0} {300 3 0} {200 2 0}}
+
+test addScore-1.2 {
+    Add a few scores, make sure they all get added in order
+} {
+    set obj [CubeScores \#auto]
+    $obj addScore 567 5 1
+    $obj addScore 765 4 3
+    $obj addScore 123 9 10
+    $obj addScore 1234 0 0
+
+    $obj getScores
+} {{1234 0 0} {765 4 3} {567 5 1} {123 9 10} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0}}
+
+# ========================================
+test loadScores-1.1 {
+     Load the scores file
+} {
+    for {set i 500; set text ""} {$i > 0} {incr i -50} {
+        append text "$i [expr {$i / 100}] 0\n"
+    }
+    set filename [file join [file dirname [info script]] scores.txt]
+    tcltest::makeFile $text $filename
+    set obj [CubeScores \#auto]
+    list [$obj loadScores $filename] [$obj getScores]
+} {10 {{500 5 0} {450 4 0} {400 4 0} {350 3 0} {300 3 0} {250 2 0} {200 2 0} {150 1 0} {100 1 0} {50 0 0}}}
+
+test loadScores-1.2 {
+     Load the scores file when its not a full 10 lines
+} {
+    for {set i 500; set text ""} {$i > 250} {incr i -50} {
+        append text "$i [expr {$i / 100}] 0\n"
+    }
+    set filename [file join [file dirname [info script]] scores.txt]
+    tcltest::makeFile $text $filename
+    set obj [CubeScores \#auto]
+    list [$obj loadScores $filename] [$obj getScores]
+} {5 {{500 5 0} {450 4 0} {400 4 0} {350 3 0} {300 3 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0}}}
+
+test loadScores-1.3 {
+     Load the scores file when none exists
+} {
+    set filename [file join [file dirname [info script]] scores.txt]
+    if {[file exists $filename]} {
+        tcltest::removeFile $filename
+    }
+    set obj [CubeScores \#auto]
+    list [$obj loadScores $filename] [$obj getScores]
+} {0 {{0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0}}}
+
+# ========================================
+test saveScores-1.1 {
+    Save the scores
+} {
+    set filename [file join [file dirname [info script]] scores.txt]
+    if { [file exists $filename] } {
+        removeFile $filename
+    }
+
+    set obj [CubeScores \#auto]
+    $obj addScore 567 5 1
+    $obj addScore 765 4 3
+    $obj addScore 123 9 10
+    $obj addScore 1234 0 0
+
+    $obj saveScores $filename
+
+    set result {}
+    set fd [open $filename r]
+    while {[gets $fd line] >0} {
+        lappend result $line
+    }
+    close $fd
+    set result
+} {{1234 0 0} {765 4 3} {567 5 1} {123 9 10} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0}}
+
+# ========================================
+test loadAddSaveScore-1.1 {
+    Given one new score, load the old scores, add the new score,
+    and save the new list
+} {
+    set filename [file join [file dirname [info script]] scores.txt]
+    makeFile "999 8 7\n888 7 6\n765 6 5\n666 5 4" $filename
+    CubeScores::loadAddSaveScore 777 6 77 $filename
+    
+    set result {}
+    set fd [open $filename r]
+    while {[gets $fd line] >0} {
+        lappend result $line
+    }
+    close $fd
+    set result
+} {{999 8 7} {888 7 6} {777 6 77} {765 6 5} {666 5 4} {0 0 0} {0 0 0} {0 0 0} {0 0 0} {0 0 0}}
+
+
+cleanupTests

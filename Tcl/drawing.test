@@ -1,0 +1,65 @@
+
+#
+# $Header: /opt/cvs-repository/cubes/drawing.test,v 1.2 2004/04/12 00:13:52 Robert Exp $
+#
+
+source [file join [file dirname [info script]] drawing.tcl]
+
+package require tcltest
+namespace import tcltest::*
+
+# ========================================
+test shadow.dark-1.1 {
+} {
+    list [drawing::shadow.dark 0 0 65535] \
+        [drawing::shadow.dark 0 65535 0] \
+        [drawing::shadow.dark 65535 0 0]
+} {}
+
+# ========================================
+test shadow.light-1.1 {
+} {
+    #drawing::shadow.light {R G B}
+} {}
+
+# ========================================
+test rect-1.1 {
+} -setup {
+    canvas .c
+} -body {
+    set items [drawing::rect .c 16 17 31 35 2 blue]
+    foreach {minX minY maxX maxY} {100 100 0 0} {break}
+    foreach item $items {
+        foreach {x y} [.c coords $item] {
+            set minX [expr {$x < $minX ? $x : $minX}]
+            set maxX [expr {$x > $maxX ? $x : $maxX}]
+            set minY [expr {$y < $minY ? $y : $minY}]
+            set maxY [expr {$y > $maxY ? $y : $maxY}]
+        }
+    }
+    list $minX $minY $maxX $maxY
+} -cleanup {
+    destroy .c
+} -result {16.0 17.0 31.0 35.0}
+
+test rect-1.2 {
+} -setup {
+    canvas .c
+} -body {
+    set items [drawing::rect .c 5 5 20 20 3 blue]
+    foreach {minX minY maxX maxY} {100 100 0 0} {break}
+    foreach item $items {
+        foreach {x y} [.c coords $item] {
+            set minX [expr {$x < $minX ? $x : $minX}]
+            set maxX [expr {$x > $maxX ? $x : $maxX}]
+            set minY [expr {$y < $minY ? $y : $minY}]
+            set maxY [expr {$y > $maxY ? $y : $maxY}]
+        }
+    }
+    list $minX $minY $maxX $maxY
+} -cleanup {
+    destroy .c
+} -result {5.0 5.0 20.0 20.0}
+
+# ========================================
+cleanupTests

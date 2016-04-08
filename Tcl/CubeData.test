@@ -1,0 +1,384 @@
+#
+# $Header: /opt/cvs-repository/cubes/CubeData.test,v 1.11 2004/04/09 02:25:44 Robert Exp $
+#
+
+source CubeData.tcl
+
+package require tcltest
+
+tcltest::test siftDown-1.1 {
+    Test that we can sift a list of lists down
+} {
+    set obj [CubeData \#auto {
+        {1  {} 1}
+        {{} 1  {}}
+        {{} {} 1}
+    }]
+    set retval [$obj siftDown]
+    list $retval [$obj getData]
+} {1 {{{} {} {}} {{} {} 1} {1 1 1}}}
+
+tcltest::test siftDown-1.2 {
+    Make sure we return 0 if nothing gets modified
+} {
+    set obj [CubeData \#auto {
+        {{} {} {}}
+        {{} {} 1}
+        {1  1  1}
+    }]
+    set retval [$obj siftDown]
+    list $retval [$obj getData]
+} {0 {{{} {} {}} {{} {} 1} {1 1 1}}}
+             
+tcltest::test siftDown-2.1 {
+    Make sure we don't fail if an entire column is empty for full
+} {
+    set obj [CubeData \#auto {
+        {{} {} 1}
+        {{} 1  1}
+        {{} {} 1}
+    }]
+    set retval [$obj siftDown]
+    list $retval [$obj getData]
+} {1 {{{} {} 1} {{} {} 1} {{} 1 1}}}
+
+# ========================================
+
+tcltest::test siftLeft-1.1 {
+    Test that we can sift a list of lists left
+} {
+    set obj [CubeData \#auto {
+        {1  {} 1}
+        {{} 1  {}}
+        {{} {} 1}
+    }]
+    list [$obj siftLeft] [$obj getData]
+} {1 {{1 1 {}} {1 {} {}} {1 {} {}}}}
+
+tcltest::test siftLeft-1.2 {
+    Make sure we return 0 if not modified
+} {
+    set obj [CubeData \#auto {
+        {1 1  {}}
+        {1 {} {}}
+        {1 {} {}}
+    }]
+    list [$obj siftLeft] [$obj getData]
+} {0 {{1 1 {}} {1 {} {}} {1 {} {}}}}
+
+# ========================================
+
+tcltest::test getNeighbors-1.1 {
+    Make sure we can get the neightbors for a cell
+} {
+    set obj [CubeData \#auto {
+        {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5}
+    }]
+    $obj getNeighbors 3 2
+} {{3 1} {3 3} {2 2} {4 2}}
+
+tcltest::test getNeighbors-1.2 {
+    Make sure the top edge works
+} {
+    set obj [CubeData \#auto {
+        {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5}
+    }]
+    $obj getNeighbors 0 2
+} {{0 1} {0 3} {1 2}}
+
+tcltest::test getNeighbors-1.3 {
+    Make sure the bottom edge works
+} {
+    set obj [CubeData \#auto {
+        {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5}
+    }]
+    $obj getNeighbors 4 2
+} {{4 1} {4 3} {3 2}}
+
+tcltest::test getNeighbors-1.4 {
+    Make sure the left edge works
+} {
+    set obj [CubeData \#auto {
+        {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5}
+    }]
+    $obj getNeighbors 3 0
+} {{3 1} {2 0} {4 0}}
+
+tcltest::test getNeighbors-1.5 {
+    Make sure the right edge works
+} {
+    set obj [CubeData \#auto {
+        {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5} {1 2 3 4 5}
+    }]
+    $obj getNeighbors 3 4
+} {{3 3} {2 4} {4 4}}
+
+# ========================================
+tcltest::test getFullConencted-1.1 {
+    Get all the connected cubes that are the same color
+} {
+    set obj [CubeData \#auto {
+        {color:red color:blue color:red  color:blue color:red}
+        {color:red color:red  color:blue color:blue color:blue}
+        {color:red color:blue color:blue color:blue color:red}
+        {color:red color:red  color:blue color:red  color:red}
+        {color:red color:red  color:blue color:blue color:red}
+    }]
+    lsort [$obj getFullConnected 2 1]
+} {{0 3 color:blue} {1 2 color:blue} {1 3 color:blue} {1 4 color:blue} {2 1 color:blue} {2 2 color:blue} {2 3 color:blue} {3 2 color:blue} {4 2 color:blue} {4 3 color:blue}}
+
+tcltest::test getFullConencted-1.2 {
+    Get all the connected cubes that are the same color
+} {
+    puts "Starting Test 1.2"
+    set obj [CubeData \#auto {
+        {color:red color:blue color:red}
+        {color:red color:red  mult:2}
+        {color:red color:blue mult:2}
+    }]
+    set value [lsort [$obj getFullConnected 1 1]]
+    puts "Ending Test 1.2"
+    set value
+} {{0 0 color:red} {1 0 color:red} {1 1 color:red} {1 2 mult:2} {2 0 color:red}}
+
+# ========================================
+tcltest::test getCloseConnected-1.1 {
+    Get all the connected cubes that are only a distance of 1 away
+} {
+    set obj [CubeData \#auto {
+        {color:red color:blue color:red  color:blue color:red}
+        {color:red color:red  color:blue color:blue color:blue}
+        {color:red color:blue color:blue color:blue color:red}
+        {color:red color:red  color:blue color:red  color:red}
+        {color:red color:red  color:blue color:blue color:red}
+    }]
+    lsort [$obj getCloseConnected color:blue {
+        {2 1 color:blue} {2 2 color:blue} {1 2 color:blue}
+    }]
+} {{0 2 color:red} {1 1 color:red} {1 3 color:blue} {2 0 color:red} {2 3 color:blue} {3 1 color:red} {3 2 color:blue}}
+
+# ========================================
+tcltest::test isLike-1.1 {
+    Make sure we match an exact match
+} {
+    CubeData::isLike color:blue color:blue
+} {1}
+
+tcltest::test isLike-1.2 {
+    Make sure we don't match an exact match that isn't same
+} {
+    CubeData::isLike color:blue color:red
+} {0}
+
+tcltest::test isLike-1.3 {
+    Make sure we match a glob
+} {
+    CubeData::isLike color:* color:blue
+} {1}
+
+tcltest::test isLike-1.4 {
+    Make sure we don't match a failing glob
+} {
+    CubeData::isLike color:* notcolor:red
+} {0}
+
+# ========================================
+tcltest::test isConnected-1.1 {
+    Make sure two cubes of the same color are connected
+} {
+    CubeData::isConnected color:blue color:blue
+} {1}
+
+tcltest::test isConnected-1.2 {
+    Make sure two cubes of the different colors are not connected
+} {
+    CubeData::isConnected color:blue color:red
+} {0}
+
+tcltest::test isConnected-1.3 {
+    Make sure color -> special is true
+} {
+    CubeData::isConnected color:blue mult:2
+} {1}
+
+tcltest::test isConnected-1.4 {
+    Make sure special -> color is false
+} {
+    CubeData::isConnected mult:2 color:blue
+} {0}
+
+tcltest::test isConnected-1.5 {
+    Make sure a special cube is never considered connected to a special cube
+} {
+    CubeData::isConnected mult:2 mult:2
+} {0}
+
+# ========================================
+tcltest::test containsElement-1.1 {
+    Make sure we can find an element we want
+} {
+    CubeData::containsElement color:red {
+        {1 2 color:blue} {2 3 color:blue} {2 4 color:red} {4 5 color:yellow}
+    }
+} {1}
+
+tcltest::test containsElement-1.1 {
+    Make sure we can find an element we want
+} {
+    CubeData::containsElement color:purple {
+        {1 2 color:blue} {2 3 color:blue} {2 4 color:red} {4 5 color:yellow}
+    }
+} {0}
+
+# ========================================
+tcltest::test countScore-1.1 {
+    Count the score for color elements only
+} {
+    CubeData::countScore {
+        {1 2 color:blue} {2 3 color:blue} {2 4 color:red} {4 5 color:yellow}
+    }
+} {4}
+
+tcltest::test countScore-1.2 {
+    Count the score for color elements only, two lists
+} {
+    CubeData::countScore {
+        {1 2 color:blue} {2 3 color:blue} {2 4 color:red} {4 5 color:yellow}
+    } {
+        {5 2 color:blue} {5 3 color:blue}
+    }
+} {6}
+
+tcltest::test countScore-1.3 {
+    Count the score for lists containing multipliers
+} {
+    CubeData::countScore {
+        {1 2 color:blue} {2 3 color:blue} {2 4 mult:2} {4 5 color:yellow}
+    } {
+        {5 2 color:blue} {5 3 mult:3}
+    }
+} {24}
+
+# ========================================
+tcltest::test removeElements-1.1 {
+    Remove a number of elements
+} {
+    set obj [CubeData \#auto {
+        {color:red color:blue color:red}
+        {color:red color:red  color:blue}
+        {color:red color:blue color:blue}
+    }]
+    $obj removeElements {{0 0} {1 0} {1 1} {2 0}}
+    $obj getData
+} {{{} color:blue color:red} {{} {} color:blue} {{} color:blue color:blue}}
+# ========================================
+tcltest::test clicked-1.1 {
+} {
+    set obj [CubeData \#auto {
+        {color:red color:blue color:red}
+        {color:red color:red  color:blue}
+        {color:red color:blue color:blue}
+    }]
+    list [$obj clicked 1 2] [$obj getData]
+} {3 {{color:red color:blue color:red} {color:red color:red {}} {color:red {} {}}}}
+
+tcltest::test clicked-1.2 {
+    If there's only 1 color cube in the set, don't do anything
+} {
+    set obj [CubeData \#auto {
+        {color:red mult:2     color:red}
+        {color:red color:red  mult:2}
+        {color:red color:blue color:blue}
+    }]
+    list [$obj clicked 0 2] [$obj getData]
+} {0 {{color:red mult:2 color:red} {color:red color:red mult:2} {color:red color:blue color:blue}}}
+
+# ========================================
+tcltest::test populate-1.1 {
+} {
+    set obj [CubeData \#auto {}]
+    $obj populate 5 6
+
+    set data [$obj getData]
+    if {[llength $data] != 5} {
+        return "Height is not 5"
+    }
+
+    foreach row $data {
+        if {[llength $row] != 6} {
+            return "Row size is not 6"
+        }
+        foreach elem $row {
+            if {!([string match color:* $elem] || 
+                  [string match mult:* $elem] ||
+                  [string match span:* $elem])} {
+                return "Element is not of a proper type"
+            }
+        }
+    }
+
+    return 1
+} {1}
+
+# ========================================
+tcltest::test hasMoves-1.1 {
+} {
+    set obj [CubeData \#auto {
+        {color:blue color:red}
+        {color:blue color:yellow}
+    }]
+    $obj hasMoves
+} {1}
+
+tcltest::test hasMoves-1.2 {
+} {
+    set obj [CubeData \#auto {
+        {color:blue color:red}
+        {color:purple color:yellow}
+    }]
+    $obj hasMoves
+} {0}
+
+tcltest::test hasMoves-1.3 {
+} {
+    set obj [CubeData \#auto {
+        {color:blue color:red}
+        {span:1     color:yellow}
+    }]
+    $obj hasMoves
+} {0}
+
+# ========================================
+tcltest::test heightWidth-1.1 {
+} {
+    set obj [CubeData \#auto {
+        {color:blue   color:red    color:blue}
+        {color:purple color:yellow color:red}
+    }]
+    list [$obj height] [$obj width]
+} {2 3}
+    
+# ========================================
+tcltest::test numCubes-1.1 {
+    count the number of non-empty cubes
+} {
+    set obj [CubeData \#auto {
+        {color:blue   color:red    color:blue}
+        {color:purple color:yellow color:red}
+    }]
+    $obj numCubes
+} {6}
+
+tcltest::test numCubes-1.2 {
+    count the number of non-empty cubes
+} {
+    set obj [CubeData \#auto {
+        {color:blue   {}           color:blue}
+        {color:purple color:yellow {}}
+    }]
+    $obj numCubes
+} {4}
+
+
+# ========================================
+tcltest::cleanupTests

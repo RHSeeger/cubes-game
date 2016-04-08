@@ -1,0 +1,43 @@
+#
+# $Header: /opt/cvs-repository/cubes/CanvasSection.test,v 1.2 2004/04/12 01:29:08 Robert Exp $
+#
+
+source [file join [file dirname [info script]] CanvasSection.tcl]
+
+package require tcltest
+namespace import tcltest::*
+
+# ========================================
+test constructor-1.1 {
+    Create the object
+} {
+    set obj [CanvasSection \#auto .c 10 12 100 100]
+    list [$obj cget -canvas] [$obj cget -x1] [$obj cget -y1] \
+        [$obj cget -x2] [$obj cget -y2]
+} {.c 10 12 100 100}
+
+# ========================================
+test map-1.1 {
+    Make sure the x map works
+} {
+    set obj [CanvasSection \#auto .c 10 15 100 100]
+    $obj map x 12
+} {22}
+
+test map-1.2 {
+    Make sure the x map works
+} {
+    set obj [CanvasSection \#auto .c 10 15 100 100]
+    $obj map y 12
+} {27}
+
+test map-1.3 {
+    Make sure the x map works
+} {
+    set obj [CanvasSection \#auto .c 10 15 100 100]
+    $obj map 12 12
+} {22 27}
+
+
+# ========================================
+cleanupTests
